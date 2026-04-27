@@ -32,7 +32,11 @@ if "暂时不可用" in result.stdout:
 else:
     print(result.stdout, end="")
 
-# 5. 短线情绪
+# 5. 龙虎榜
+print("\n>>> 龙虎榜")
+subprocess.run([sys.executable, os.path.join(base, "lhb_list.py")])
+
+# 6. 短线情绪
 print("\n>>> 短线情绪")
 result2 = subprocess.run([sys.executable, os.path.join(base, "sentiment_snapshot.py")], capture_output=True, text=True)
 print(result2.stdout, end="")
