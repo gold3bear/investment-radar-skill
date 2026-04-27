@@ -45,36 +45,40 @@ def _is_trading_day():
 
 
 def get_sentiment_data():
-    """抓取真实情绪数据"""
+    """
+    抓取真实情绪数据。
+    每个字段独立 try-catch，任一失败 data_fetch_success = False。
+    """
     if ak is None or not _is_trading_day():
         return None
 
+    data_fetch_success = True
+
     try:
-        # 涨停池
         zt_df = _quiet_call(ak.stock_zt_pool_em)
         limit_ups = len(zt_df)
     except Exception:
         limit_ups = 0
+        data_fetch_success = False
 
     try:
-        # 跌停池
         dt_df = _quiet_call(ak.stock_zt_pool_dtgc_em)
         limit_downs = len(dt_df)
     except Exception:
         limit_downs = 0
+        data_fetch_success = False
 
     try:
-        # 炸板池（曾触板但炸开的）
         zbgc_df = _quiet_call(ak.stock_zt_pool_zbgc_em)
         broken_boards = len(zbgc_df)
     except Exception:
         broken_boards = 0
+        data_fetch_success = False
 
-    # 连板高度：取涨停池中连板数列的最小值（最高连板数）
+    # 连板高度
     max_board = 0
     if limit_ups > 0 and len(zt_df) > 0:
         try:
-            # 东方财富涨停池有"连板数"字段
             cols = zt_df.columns.tolist()
             board_col = None
             for c in ["连板数", "连板", "B板次数"]:
@@ -83,17 +87,16 @@ def get_sentiment_data():
                     break
             if board_col:
                 max_board = int(zt_df[board_col].max())
-            else:
-                # 如果没有连板字段，尝试计算连续涨停次数（通过历史对比）
-                max_board = 0
         except Exception:
             max_board = 0
+            data_fetch_success = False
 
     return {
         "limit_ups": limit_ups,
         "limit_downs": limit_downs,
         "broken_boards": broken_boards,
         "max_board": max_board,
+        "data_fetch_success": data_fetch_success,
     }
 
 
@@ -121,7 +124,12 @@ def classify_market_sentiment(limit_ups, limit_downs, broken_rate, max_board):
 
 
 def build_sentiment_snapshot(limit_ups=None, limit_downs=None, broken_boards=None, max_board=None):
-    # 如果没有传入参数，尝试抓真实数据
+    """
+    构建情绪快照。
+    若数据获取全部失败（data_fetch_success=False），返回专用状态，不输出情绪结论。
+    """
+    data_fetch_success = True
+
     if all(v is None for v in [limit_ups, limit_downs, broken_boards, max_board]):
         data = get_sentiment_data()
         if data is None:
@@ -130,11 +138,23 @@ def build_sentiment_snapshot(limit_ups=None, limit_downs=None, broken_boards=Non
                 "position": "——",
                 "note": "周末/节假日数据暂停。",
                 "metrics": {},
+                "data_unavailable": True,
             }
         limit_ups = data["limit_ups"]
         limit_downs = data["limit_downs"]
         broken_boards = data["broken_boards"]
         max_board = data["max_board"]
+        data_fetch_success = data.get("data_fetch_success", True)
+
+    # 数据获取有任意一项失败，不输出情绪结论
+    if not data_fetch_success:
+        return {
+            "stage": "（数据获取失败）",
+            "position": "——",
+            "note": "情绪数据暂无法获取，请稍后重试。",
+            "metrics": {},
+            "data_unavailable": True,
+        }
 
     total_limit_events = limit_ups + broken_boards
     broken_rate = 0.0 if total_limit_events == 0 else broken_boards / total_limit_events * 100
@@ -145,10 +165,13 @@ def build_sentiment_snapshot(limit_ups=None, limit_downs=None, broken_boards=Non
         max_board=max_board,
     )
     snapshot["metrics"]["broken_boards"] = broken_boards
+    snapshot["data_unavailable"] = False
     return snapshot
 
 
 def format_sentiment_snapshot(snapshot):
+    if snapshot.get("data_unavailable"):
+        return f"情绪阶段: {snapshot['stage']} | {snapshot['note']}"
     metrics = snapshot["metrics"]
     if not metrics:
         return f"情绪阶段: {snapshot['stage']} | {snapshot['note']}"

@@ -53,12 +53,38 @@ def extract_cn_us_spread(df):
 
 
 def extract_northbound_flow(df):
-    latest_date = df["交易日"].max()
-    latest = df[(df["交易日"] == latest_date) & (df["资金方向"] == "北向")]
+    """
+    提取北向资金数据。
+    若最新交易日是今天，标记为 UNAVAILABLE_TODAY（盘中数据未结算）。
+    若 sum 为 0 且非今天，标记为 UNAVAILABLE_ZERO。
+    """
+    from datetime import date as date_type
+
+    today_str = date_type.today().isoformat()
+    latest_date_raw = df["交易日"].max()
+    latest_date_str = str(latest_date_raw)
+
+    latest = df[(df["交易日"] == latest_date_raw) & (df["资金方向"] == "北向")]
     net_buy = float(latest["成交净买额"].sum())
+
+    # 今天的数据尚未结算，显示为"盘中，暂无结算数据"
+    if latest_date_str == today_str and abs(net_buy) < 0.01:
+        return {
+            "date": latest_date_str,
+            "net_buy": None,          # None = 盘中未结算，不代表真实 0
+            "status": "UNAVAILABLE_TODAY",
+        }
+    # 历史日期但净买额为 0，可能是数据缺失
+    if abs(net_buy) < 0.01:
+        return {
+            "date": latest_date_str,
+            "net_buy": 0.0,
+            "status": "UNAVAILABLE_ZERO",
+        }
     return {
-        "date": str(latest_date),
+        "date": latest_date_str,
         "net_buy": net_buy,
+        "status": "OK",
     }
 
 
@@ -133,8 +159,15 @@ def format_macro_snapshot(snapshot):
 
     northbound = snapshot.get("NORTHBOUND")
     if northbound:
-        arrow = "🔴" if northbound["net_buy"] > 0 else "🟢" if northbound["net_buy"] < 0 else "⚪"
-        lines.append(f"{arrow} 北向资金 ({northbound['date']}): 净买额 {northbound['net_buy']:+.2f} 亿")
+        status = northbound.get("status", "OK")
+        if status == "UNAVAILABLE_TODAY":
+            lines.append(f"⚪ 北向资金 ({northbound['date']}): 净买额 盘中数据未结算（今日收盘后更新）")
+        elif status == "UNAVAILABLE_ZERO":
+            lines.append(f"⚪ 北向资金 ({northbound['date']}): 数据暂不可用")
+        else:
+            net_buy = northbound["net_buy"]
+            arrow = "🔴" if net_buy > 0 else "🟢" if net_buy < 0 else "⚪"
+            lines.append(f"{arrow} 北向资金 ({northbound['date']}): 净买额 {net_buy:+.2f} 亿")
 
     financing = snapshot.get("BANK_FINANCING")
     if financing:
