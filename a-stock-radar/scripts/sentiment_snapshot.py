@@ -44,6 +44,12 @@ def _is_trading_day():
     return datetime.now().weekday() < 5
 
 
+def _today_str():
+    """返回今日日期字符串 YYYYMMDD 格式，供 akshare API 使用"""
+    from datetime import date
+    return date.today().strftime("%Y%m%d")
+
+
 def get_sentiment_data():
     """
     抓取真实情绪数据。
@@ -52,24 +58,25 @@ def get_sentiment_data():
     if ak is None or not _is_trading_day():
         return None
 
+    today = _today_str()
     data_fetch_success = True
 
     try:
-        zt_df = _quiet_call(ak.stock_zt_pool_em)
+        zt_df = _quiet_call(ak.stock_zt_pool_em, date=today)
         limit_ups = len(zt_df)
     except Exception:
         limit_ups = 0
         data_fetch_success = False
 
     try:
-        dt_df = _quiet_call(ak.stock_zt_pool_dtgc_em)
+        dt_df = _quiet_call(ak.stock_zt_pool_dtgc_em, date=today)
         limit_downs = len(dt_df)
     except Exception:
         limit_downs = 0
         data_fetch_success = False
 
     try:
-        zbgc_df = _quiet_call(ak.stock_zt_pool_zbgc_em)
+        zbgc_df = _quiet_call(ak.stock_zt_pool_zbgc_em, date=today)
         broken_boards = len(zbgc_df)
     except Exception:
         broken_boards = 0
