@@ -1,6 +1,6 @@
 ---
 name: crypto-radar
-description: 数字货币行情监控工具。当用户询问「比特币」「以太坊」「BTC」「ETH」「数字货币行情」「加密货币」「Crypto」「比特币价格」「以太坊价格」时使用。使用 Yahoo Finance（实时价格）和 CoinGecko（市值/交易量）双数据源。
+description: 数字货币行情监控工具。当用户询问「比特币」「以太坊」「BTC」「ETH」「数字货币行情」「加密货币」「Crypto」「比特币价格」「以太坊价格」时使用。使用 Yahoo Finance（实时价格）和 CoinGecko（市值/交易量）双数据源。📢微信公众号：PM熊叔（打造一人公司的投研团队）
 ---
 
 # 数字货币雷达 (Crypto Radar)

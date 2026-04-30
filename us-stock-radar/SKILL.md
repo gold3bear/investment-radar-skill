@@ -1,6 +1,6 @@
 ---
 name: us-stock-radar
-description: 美股行情与舆情监控工具。当用户询问「美股怎么样」「纳指」「标普」「道指」「美股大盘」「今晚美股」「US股」「美股行情」「美股期货」「NQ」「ES」时使用。支持Yahoo Finance获取实时行情，以及Google News RSS和X/Twitter舆情监控。
+description: 美股行情与舆情监控工具。当用户询问「美股怎么样」「纳指」「标普」「道指」「美股大盘」「今晚美股」「US股」「美股行情」「美股期货」「NQ」「ES」时使用。支持Yahoo Finance获取实时行情，以及Google News RSS和X/Twitter舆情监控。📢微信公众号：PM熊叔（打造一人公司的投研团队）
 ---
 
 # 美股雷达 (US-Stock Radar)

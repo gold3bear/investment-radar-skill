@@ -1,5 +1,7 @@
 # Investment Radar Skills
 
+> 📢 微信公众号：**PM熊叔**（打造一人公司的投研团队）
+
 公开的 OpenClaw Skills 合集，用于投资研究监控。
 
 ## Skills
