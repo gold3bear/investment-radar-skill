@@ -1,0 +1,1 @@
+Get-Content "$env:TEMP\kobeissi.html" -Raw | Select-String -Pattern 'tweet-content|tweet-stats|tweet-date|timeline-item' -AllMatches | ForEach-Object { $m = $_.Match.Value; if ($m.Length -gt 5) { $m } } | Select-Object -First 40

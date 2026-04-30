@@ -90,29 +90,23 @@ def get_sector_ranking(market_type="行业板块", top=20, retries=3):
     """
     获取板块涨跌排行。
     优先走 API，失败时自动切换 HTML 解析。
-    返回 (data, error_msg)：有数据时 error_msg 为 None，无数据时返回具体错误原因。
     """
     # 尝试 API（主）
     data = None
-    err = None
     try:
         data = _get_via_api(market_type, top, retries)
-    except Exception as e:
-        err = f"东方财富 API 请求失败: {type(e).__name__}"
+    except Exception:
+        pass
 
     if data is not None:
-        return data, None
+        return data
 
     # API 失败，切换 HTML 备用（等1秒）
     time.sleep(1)
     try:
-        html_data = _get_via_html(market_type, top)
-        if html_data:
-            return html_data, None
-        else:
-            return [], "东方财富 HTML 解析无结果，数据源可能已更新"
-    except Exception as e:
-        return [], f"东方财富 API+HTML 均失败: {type(e).__name__}"
+        return _get_via_html(market_type, top)
+    except Exception:
+        return []
 
 def format_sector(s):
     pct = s["f3"]
@@ -122,12 +116,9 @@ def format_sector(s):
 if __name__ == "__main__":
     market = sys.argv[1] if len(sys.argv) > 1 else "行业板块"
     print(f"\n=== {market}涨跌榜 ===")
-    data, err = get_sector_ranking(market, 30)
+    data = get_sector_ranking(market, 30)
     if not data:
-        if err:
-            print(f"（{err}，请稍后重试）")
-        else:
-            print("（板块数据暂时不可用，请稍后重试）")
+        print("（板块数据暂时不可用，请稍后重试）")
     else:
         print("\n【涨幅榜】")
         for s in sorted(data, key=lambda x: x["f3"], reverse=True)[:10]:
